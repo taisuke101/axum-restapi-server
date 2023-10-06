@@ -1,5 +1,5 @@
 watch-server:
-	cargo watch -q -c -w src/ -x run
+	cargo watch -q -c -w src/ -w .cargo/ -x run
 
 watch-client:
-	cargo watch -q -c -w tests/ -x "test -q quick_dev -- --nocapture"
+	cargo watch -q -c -w examples/ -x "run --example quick_dev"
