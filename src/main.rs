@@ -17,6 +17,8 @@ use serde::Deserialize;
 use serde_json::json;
 use tower_cookies::{CookieManager, CookieManagerLayer};
 use tower_http::services::ServeDir;
+use tracing::{debug, info};
+use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
 
 use crate::web::{mw_auth, routes_tickets};
@@ -30,6 +32,12 @@ mod web;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .without_time()
+        .with_target(false)
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let mc = ModelController::new().await?;
 
     let routes_apis = routes_tickets::routes(mc.clone())
@@ -49,7 +57,7 @@ async fn main() -> Result<()> {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
 
-    println!("->> Listening on http://{addr}\n");
+    info!("Listening on http://{addr}\n");
 
     axum::Server::bind(&addr)
         .serve(routes_all.into_make_service())
@@ -65,7 +73,7 @@ async fn main_response_mapper(
     req_method: Method,
     res: Response,
 ) -> Response {
-    println!("->> {:<12} - main_response_mapper", "RES_MAPPER");
+    debug!(" {:<12} - main_response_mapper", "RES_MAPPER");
     let uuid = Uuid::new_v4();
 
     let service_error = res.extensions().get::<Error>();
@@ -89,7 +97,7 @@ async fn main_response_mapper(
     let client_error = client_status_error.unzip().1;
     log_request(uuid, req_method, uri, ctx, service_error, client_error).await;
 
-    println!();
+    debug!("\n");
     error_response.unwrap_or(res)
 }
 
@@ -109,14 +117,14 @@ struct HelloParams {
 }
 
 async fn handler_hello(Query(params): Query<HelloParams>) -> impl IntoResponse {
-    println!("->> {:<12} - handler_hello - {params:?}", "HANDLER");
+    debug!(" {:<12} - handler_hello - {params:?}", "HANDLER");
 
     let name = params.name.as_deref().unwrap_or("World");
     Html(format!("<h1>Hello, <strong>{name}</strong></h1>"))
 }
 
 async fn handler_hello_two(Path(name): Path<String>) -> impl IntoResponse {
-    println!("->> {:<12} - handler_hello_two - {name:?}", "HANDLER");
+    debug!(" {:<12} - handler_hello_two - {name:?}", "HANDLER");
 
     Html(format!("<h1>Hello, <strong>{name}</strong></h1>"))
 }
